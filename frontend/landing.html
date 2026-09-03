@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="LEDGER/CTRL — deterministic settlement reconciliation. It closes the matches it's sure of. It refuses the ones it isn't. Razorpay AI Buildathon 2026.">
+<title>LEDGER/CTRL — Settlement reconciliation control</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/design.css">
+<style>
+/* Landing-specific layout */
+header {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 20px 32px; border-bottom: 1px solid var(--rule);
+  background: var(--ink);
+}
+.brand { font-family: var(--mono); font-size: 14px; letter-spacing: .02em; }
+.brand span { color: var(--paper-dim); }
+nav a { color: var(--paper-dim); text-decoration: none; font-size: 14px; margin-left: 24px; transition: color .15s; }
+nav a:hover { color: var(--paper); }
+nav a.nav-cta { color: var(--ink); background: var(--paper); padding: 8px 16px; border-radius: 2px; font-family: var(--mono); font-size: 13px; margin-left: 16px; }
+nav a.nav-cta:hover { background: #fff; }
+
+.hero {
+  display: grid; grid-template-columns: 64px 1fr; gap: 32px;
+  padding: 88px 0 96px; border-bottom: 1px solid var(--rule);
+}
+.hero-rail {
+  font-family: var(--mono); font-size: 11px; color: var(--paper-faint);
+  writing-mode: vertical-rl; text-orientation: mixed; white-space: nowrap; padding-top: 4px;
+}
+.hero h1 {
+  font-family: var(--serif); font-weight: 500; font-size: clamp(36px, 5vw, 56px);
+  line-height: 1.12; max-width: 640px; color: var(--paper);
+}
+.hero .lede { max-width: 480px; margin-top: 20px; color: var(--paper-dim); font-size: 17px; line-height: 1.65; }
+.status-tags { display: flex; gap: 8px; margin-top: 24px; flex-wrap: wrap; }
+.status-tag  { font-family: var(--mono); font-size: 10px; letter-spacing: .06em; padding: 4px 10px; border: 1px solid var(--rule); border-radius: 2px; color: var(--paper-faint); }
+.cta-row { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; align-items: center; }
+.btn-secondary-link { color: var(--paper-dim); font-size: 14px; border-bottom: 1px solid var(--rule); padding-bottom: 2px; transition: color .15s; }
+.btn-secondary-link:hover { color: var(--paper); }
+
+.section { padding: 80px 0; border-bottom: 1px solid var(--rule); }
+.section-noborder { padding: 80px 0; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; }
+
+/* Problem pipeline visual */
+.problem-flow { display: flex; flex-direction: column; gap: 0; background: var(--slate); border: 1px solid var(--rule); }
+.pf-row { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--rule); font-family: var(--mono); font-size: 13px; }
+.pf-row:last-child { border-bottom: none; }
+.pf-icon { width: 24px; text-align: center; flex-shrink: 0; color: var(--paper-faint); }
+.pf-row .pf-label { flex: 1; }
+.pf-row .pf-status { color: var(--amber); font-size: 11px; }
+.pf-divider { border: none; border-top: 1px dashed var(--rule); margin: 0; }
+.pf-error { background: var(--rust-bg); border-top: 1px solid var(--rust-brd); }
+.pf-error .pf-label { color: var(--rust); }
+
+/* Core principle */
+.principle-quote { font-family: var(--serif); font-size: clamp(26px, 3.5vw, 38px); font-weight: 500; line-height: 1.2; max-width: 620px; margin-bottom: 12px; }
+.principle-sub { color: var(--paper-dim); font-size: 16px; max-width: 480px; line-height: 1.6; }
+
+/* Flow diagram */
+.flow-wrapper { display: grid; grid-template-columns: 1fr 24px 1fr; gap: 0; align-items: start; }
+.flow-col-inner { display: flex; flex-direction: column; align-items: center; gap: 0; }
+.flow-col-label { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--paper-faint); text-align: center; margin-bottom: 14px; }
+.fnode { font-family: var(--mono); font-size: 12px; border: 1px solid var(--rule); background: var(--slate); padding: 8px 14px; border-radius: 2px; color: var(--paper); white-space: nowrap; text-align: center; }
+.fnode-gate { border-color: var(--amber-brd); color: var(--amber); background: var(--amber-bg); }
+.fnode-good { border-color: var(--sage-brd);  color: var(--sage);  background: var(--sage-bg);  }
+.fnode-dim  { border-color: var(--rule); color: var(--paper-dim); background: transparent; }
+.farrow { font-family: var(--mono); font-size: 14px; color: var(--rule); text-align: center; padding: 2px 0; }
+.fdivider { border: none; border-top: 1px dashed var(--rule); margin: 10px 0; }
+.flow-mid { display: flex; align-items: center; justify-content: center; color: var(--paper-faint); font-family: var(--mono); font-size: 18px; padding-top: 40%; }
+
+/* Audit section */
+.audit-search-row { display: flex; gap: 8px; margin-bottom: 14px; }
+.audit-result { background: var(--slate); border: 1px solid var(--rule); padding: 16px 18px; font-family: var(--mono); font-size: 12px; color: var(--paper-dim); white-space: pre-wrap; line-height: 1.7; min-height: 120px; max-height: 360px; overflow-y: auto; }
+
+/* Arch diagram */
+.arch-diagram { font-family: var(--mono); font-size: 12px; }
+.arch-layer { display: flex; align-items: center; gap: 0; margin-bottom: 1px; }
+.arch-box { border: 1px solid var(--rule); background: var(--slate); padding: 10px 18px; color: var(--paper-dim); flex: 1; text-align: center; }
+.arch-box.src { border-color: var(--paper-faint); color: var(--paper); }
+.arch-box.eng { border-color: var(--amber-brd); color: var(--amber); background: var(--amber-bg); }
+.arch-box.out { border-color: var(--sage-brd); color: var(--sage); background: var(--sage-bg); }
+.arch-sep { font-size: 16px; color: var(--rule); padding: 0 8px; }
+.arch-down { text-align: center; color: var(--rule); font-size: 16px; line-height: 1.4; }
+
+/* Final CTA */
+.cta-section { text-align: center; padding: 96px 0; }
+.cta-section h2 { font-family: var(--serif); font-weight: 500; font-size: clamp(30px, 4vw, 44px); margin-bottom: 12px; }
+.cta-section p  { color: var(--paper-dim); font-size: 17px; margin-bottom: 36px; }
+.cta-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+footer {
+  border-top: 1px solid var(--rule); padding: 36px 32px;
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+}
+.footer-brand { font-family: var(--mono); font-size: 13px; color: var(--paper-dim); }
+.footer-links { display: flex; gap: 20px; }
+.footer-links a { font-family: var(--mono); font-size: 12px; color: var(--paper-faint); transition: color .15s; }
+.footer-links a:hover { color: var(--paper-dim); }
+
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; padding: 56px 0 64px; }
+  .hero-rail { display: none; }
+  .grid-2 { grid-template-columns: 1fr; gap: 40px; }
+  header { padding: 16px 20px; }
+  footer { padding: 28px 20px; }
+  nav a:not(.nav-cta) { display: none; }
+  .flow-wrapper { grid-template-columns: 1fr; }
+  .flow-mid { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== NAV ===================================================== -->
+<header>
+  <div class="brand-logo">
+    <svg class="brand-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3.5" y="3.5" width="17" height="17" rx="3.5" stroke="#e7e3d8" stroke-width="1.5"/>
+      <path d="M7 12H17" stroke="#e7e3d8" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M12 7V17" stroke="#e7e3d8" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="12" cy="12" r="2.5" fill="#c98a3b"/>
+    </svg>
+    <span class="brand-name">LEDGER<span class="brand-slash">/</span>CTRL</span>
+    <span class="brand-badge">RECONCILIATION CONTROL</span>
+  </div>
+  <nav>
+    <a href="#pipeline">Pipeline</a>
+    <a href="#evaluation">Evaluation</a>
+    <a href="#refuse">Refusals</a>
+    <a href="/app" class="nav-cta">OPEN DEMO &rarr;</a>
+  </nav>
+</header>
+
+<div class="wrap">
+
+<!-- ===== SECTION 1: HERO ========================================= -->
+<section class="hero">
+  <div class="hero-rail" id="rail-text">LEDGER/CTRL &mdash; BUILDATHON 2026</div>
+  <div>
+    <h1>Close what you can prove.<br>Escalate what you can&rsquo;t.</h1>
+    <p class="lede">Settlement, bank, and invoice control. Policy decides whether evidence is enough to close. AI explains after the fact. It cannot authorize a close. Synthetic sandbox — no ledger write, no merchant PII.</p>
+    <div class="status-tags">
+      <span class="status-tag" style="border-color:var(--sage-brd); color:var(--sage);">HOLDOUT 172 / 237 AUTO-CLOSED</span>
+      <span class="status-tag" style="border-color:var(--sage-brd); color:var(--sage);">0 WRONG AUTO-CLOSES</span>
+      <span class="status-tag" style="border-color:var(--amber-brd); color:var(--amber);">AI EXPLAINS · POLICY DECIDES</span>
+      <span class="status-tag">NO AUTO-CLOSE ON TIES</span>
+    </div>
+    <div class="cta-row">
+      <a href="/app" class="btn btn-primary">OPEN CONSOLE &rarr;</a>
+      <a href="#pipeline" class="btn-secondary-link">How policy decides</a>
+    </div>
+
+    <!-- Live ledger preview -->
+    <div class="ledger-demo" style="margin-top: 48px; max-width: 640px;">
+      <div class="ledger-head">
+        <span id="demo-label">LIVE BATCH — LOADING</span>
+        <span>SETTLEMENT &middot; BANK &middot; INVOICE</span>
+      </div>
+      <div class="ledger-row" id="lr-0">
+        <span class="lr-sid">STL&mdash;&mdash;&mdash;</span>
+        <span class="lr-amt lr-amount">&mdash;</span>
+        <span class="lr-vendor">Loading&hellip;</span>
+        <span class="status-lbl pending">PENDING</span>
+      </div>
+      <div class="ledger-row" id="lr-1">
+        <span class="lr-sid">STL&mdash;&mdash;&mdash;</span>
+        <span class="lr-amt lr-amount">&mdash;</span>
+        <span class="lr-vendor">Loading&hellip;</span>
+        <span class="status-lbl pending">PENDING</span>
+      </div>
+      <div class="ledger-row" id="lr-2">
+        <span class="lr-sid">STL&mdash;&mdash;&mdash;</span>
+        <span class="lr-amt lr-amount">&mdash;</span>
+        <span class="lr-vendor">Two candidates</span>
+        <span class="status-lbl pending">PENDING</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 2: THE PROBLEM ================================= -->
+<section class="section" id="problem">
+  <div class="grid-2">
+    <div>
+      <div class="section-label">The Problem</div>
+      <h2 class="serif" style="font-size: clamp(24px,3vw,32px); font-weight:500; line-height:1.25; max-width:420px; margin-bottom:16px;">
+        Manual reconciliation is slow.<br>Automated guessing is worse.
+      </h2>
+      <p style="color:var(--paper-dim); font-size:15px; max-width:440px; line-height:1.7;">
+        Finance teams reconcile settlements against bank statements and invoices that arrive with missing references, vendor-name drift, fee deductions, duplicates, and partial payments. A system that force-matches ambiguous records doesn&rsquo;t save time &mdash; it moves the risk downstream.
+      </p>
+    </div>
+    <div class="reveal">
+      <div class="problem-flow reveal stagger-container">
+        <div class="pf-row"><div class="pf-icon">&#x1f4c4;</div><div class="pf-label">Settlement record</div></div>
+        <div class="pf-row"><div class="pf-icon">&#x1f3e6;</div><div class="pf-label">Bank statement</div></div>
+        <div class="pf-row"><div class="pf-icon">&#x1f9fe;</div><div class="pf-label">Invoice</div></div>
+        <div class="pf-divider"></div>
+        <div class="pf-row pf-error"><div class="pf-icon">&#x26a0;</div><div class="pf-label">Wrong auto-match</div><div class="pf-status">FORCED</div></div>
+        <div class="pf-row pf-error"><div class="pf-icon">&#x1f4b8;</div><div class="pf-label">Hidden financial error</div><div class="pf-status">DOWNSTREAM</div></div>
+        <div class="pf-row pf-error"><div class="pf-icon">&#x1f575;</div><div class="pf-label">Manual investigation</div><div class="pf-status">COST</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 3: CORE PRINCIPLE ============================== -->
+<section class="section" id="principle">
+  <div class="section-label">Core Principle</div>
+  <div class="grid-2">
+    <div>
+      <p class="principle-quote">&ldquo;Precision is non-negotiable.<br>Recall is negotiable.&rdquo;</p>
+      <p class="principle-sub" style="margin-top:16px;">
+        One wrong auto-close in finance costs more than ten escalations that route to a human reviewer. The system is calibrated to minimize false matches, even at the cost of a higher exception rate.
+      </p>
+    </div>
+    <div class="reveal">
+      <div class="outcome-grid">
+        <div class="outcome-cell outcome-auto">
+          <div class="oc-label">High confidence</div>
+          <div class="oc-decision">AUTO_CLOSE</div>
+          <div class="oc-desc">Score &ge; 0.90, no tie, both counterparts present. Written to the decision store.</div>
+        </div>
+        <div class="outcome-cell outcome-escalate">
+          <div class="oc-label">Ambiguous</div>
+          <div class="oc-decision">ESCALATE</div>
+          <div class="oc-desc">Tied candidates, low confidence, or missing evidence. Routes to human review with full context.</div>
+        </div>
+        <div class="outcome-cell outcome-unresolved">
+          <div class="oc-label">Insufficient evidence</div>
+          <div class="oc-decision">UNRESOLVED</div>
+          <div class="oc-desc">Invoice or bank counterpart not found. Cannot form a three-way match.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 4: HOW IT DECIDES ============================== -->
+<section class="section" id="pipeline">
+  <div class="section-label">How It Decides</div>
+  <div style="margin-top:8px;">
+    <div class="pipe-step reveal">
+      <div class="pipe-num">01</div>
+      <div>
+        <h3>Normalize</h3>
+        <p>Settlement, bank, and invoice records are parsed into one canonical schema. Amounts, dates, and vendor names are cleaned of formatting noise before any matching begins.</p>
+      </div>
+    </div>
+    <div class="pipe-step reveal">
+      <div class="pipe-num">02</div>
+      <div>
+        <h3>Score &amp; Block</h3>
+        <p>A weighted scoring matrix ranks candidates: 0.35&times;reference, 0.25&times;amount, 0.20&times;vendor similarity, 0.20&times;date proximity. Blocking keys limit candidate search to O(n&middot;k) — not O(n&sup2;).</p>
+        <span class="pipe-tag">deterministic &middot; no LLM</span>
+      </div>
+    </div>
+    <div class="pipe-step reveal">
+      <div class="pipe-num">03</div>
+      <div>
+        <h3>Policy Gate</h3>
+        <p>AUTO_CLOSE is policy-authorized closure in this sandbox, not a bank posting. ESCALATE means a candidate exists but evidence is insufficient (including a nearby decoy). UNRESOLVED means no valid counterpart was established.</p>
+        <span class="pipe-tag">matcher/policy.py &rarr; never_auto_close_on_tie()</span>
+      </div>
+    </div>
+    <div class="pipe-step reveal">
+      <div class="pipe-num">04</div>
+      <div>
+        <h3>Explain &amp; Audit</h3>
+        <p>Escalated records with low confidence are passed to the LLM for a human-readable explanation. It recommends &mdash; it never writes a decision. Every outcome, matched or not, is logged with an immutable evidence snapshot.</p>
+        <span class="pipe-tag">AI-assisted &middot; explain-only &middot; full audit trail</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 5: DECISION ENGINE ============================= -->
+<section class="section reveal">
+  <div class="section-label">Decision Engine</div>
+  <div class="grid-2" style="align-items:start; gap:48px;">
+    <div>
+      <h2 class="serif" style="font-size:clamp(22px,2.5vw,28px); font-weight:500; margin-bottom:16px; line-height:1.25;">The LLM is downstream of the policy gate.<br>It never sets the decision.</h2>
+      <p style="color:var(--paper-dim); font-size:15px; line-height:1.7; max-width:420px;">
+        The architecture makes this structurally impossible to circumvent. The matcher scores candidates. The policy gate decides. Only then — and only for escalations — does the LLM get called to explain the context to a human reviewer.
+      </p>
+    </div>
+    <div>
+      <!-- Two-lane flow diagram -->
+      <div class="flow-wrapper">
+        <div>
+          <div class="flow-col-label">DETERMINISTIC LANE</div>
+          <div class="flow-col-inner">
+            <div class="fnode">INPUT RECORD</div>
+            <div class="farrow">&#x2193;</div>
+            <div class="fnode">NORMALIZE</div>
+            <div class="farrow">&#x2193;</div>
+            <div class="fnode">SCORE &amp; BLOCK</div>
+            <div class="farrow">&#x2193;</div>
+            <div class="fnode fnode-gate">POLICY GATE</div>
+            <div class="farrow">&#x2193;</div>
+            <div class="fnode fnode-good">AUTO_CLOSE &#x2192; AUDIT</div>
+          </div>
+        </div>
+        <div class="flow-mid">&#x2192;</div>
+        <div>
+          <div class="flow-col-label">AI LANE (ESCALATE ONLY)</div>
+          <div class="flow-col-inner">
+            <div class="fnode fnode-dim" style="margin-top:148px;">ESCALATED RECORD</div>
+            <div class="farrow">&#x2193;</div>
+            <div class="fnode fnode-dim">LLM EXPLANATION</div>
+            <div class="farrow">&#x2193;</div>
+            <div class="fnode fnode-dim">HUMAN REVIEW</div>
+            <div style="font-family:var(--mono); font-size:10px; color:var(--paper-faint); text-align:center; margin-top:8px;">"LLM explains.<br>It doesn't decide."</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 6: EVALUATION ================================== -->
+<section class="section" id="evaluation">
+  <div class="section-label">Evaluation &mdash; Holdout Batch, Fresh Seed</div>
+  <div class="metrics-grid reveal stagger-container" style="grid-template-columns: repeat(4, 1fr);">
+    <div class="metric-cell">
+      <div class="num loading" id="m-precision">--</div>
+      <div class="lbl">Match precision</div>
+      <div class="def">correct auto-closes / all auto-closes</div>
+    </div>
+    <div class="metric-cell">
+      <div class="num loading" id="m-recall">--</div>
+      <div class="lbl">Match recall</div>
+      <div class="def">correct auto-closes / all true matches</div>
+    </div>
+    <div class="metric-cell">
+      <div class="num loading" id="m-fmr">--</div>
+      <div class="lbl">False-match rate</div>
+      <div class="def">wrong auto-closes / all auto-closes</div>
+    </div>
+    <div class="metric-cell">
+      <div class="num loading" id="m-auto">--</div>
+      <div class="lbl">Auto-resolution</div>
+      <div class="def">auto_matched / total records</div>
+    </div>
+  </div>
+  <p style="margin-top:18px; font-family:var(--mono); font-size:13px; color:var(--paper-dim); max-width:640px; line-height:1.6;">
+    These figures are computed against a held-out dataset the matcher never saw during threshold tuning.
+    <span style="color:var(--amber);">Generate a fresh batch in the demo</span> — numbers update from the evaluation harness, not this page.
+  </p>
+  <div style="font-family:var(--mono); font-size:11px; color:var(--paper-faint); margin-top:10px;" id="eval-meta">&mdash;</div>
+</section>
+
+<!-- ===== SECTION 7: FAILURE IS A FEATURE ======================= -->
+<section class="section" id="refuse">
+  <div class="grid-2" style="align-items:start; gap:56px;">
+    <div>
+      <div class="section-label">Failure Is a Feature</div>
+      <h2 class="serif" style="font-size:clamp(22px,2.5vw,28px); font-weight:500; max-width:380px; line-height:1.25; margin-bottom:14px;">
+        The system knows when it doesn&rsquo;t know.
+      </h2>
+      <p style="color:var(--paper-dim); font-size:15px; max-width:400px; line-height:1.65;">
+        Every escalation and unresolved record is logged with the exact reason code and evidence snapshot &mdash; not hidden inside an accuracy number. Click any record in the demo to see the full audit trail.
+      </p>
+      <a href="/app" class="btn btn-outline" style="margin-top:24px;">View live exceptions &rarr;</a>
+    </div>
+    <div class="refuse-card reveal" id="refuse-list">
+      <div class="refuse-item">
+        <div class="ri-id" style="color:var(--paper-dim);">Loading from live batch&hellip;</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 8: AUDITABILITY ================================ -->
+<section class="section reveal">
+  <div class="section-label">Auditability</div>
+  <div class="grid-2" style="align-items:start; gap:48px;">
+    <div>
+      <h2 class="serif" style="font-size:clamp(22px,2.5vw,28px); font-weight:500; line-height:1.25; margin-bottom:14px;">
+        Every decision is auditable back to its source.
+      </h2>
+      <p style="color:var(--paper-dim); font-size:15px; line-height:1.65; max-width:400px;">
+        An AuditEvent row is written for every outcome: the exact candidate scores, policy gate results, confidence, reason code, and a snapshot of the source records at decision time. Query by settlement ID.
+      </p>
+      <div class="audit-search-row" style="margin-top:24px;">
+        <input class="input-field" id="audit-sid" placeholder="Settlement ID (e.g. S-H-9b3e-0001)" style="flex:1;">
+        <button class="btn btn-outline btn-sm" onclick="lookupAudit()">LOOK UP</button>
+      </div>
+    </div>
+    <div>
+      <div class="audit-block" id="audit-block">
+        <div class="audit-trigger" onclick="toggleAudit()">
+          <span id="audit-trigger-label">CLICK TO EXPAND AUDIT RECORD</span>
+          <span class="arr">&#x25b6;</span>
+        </div>
+        <div class="audit-content" id="audit-content">No record loaded. Enter a settlement ID above.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 9: SYSTEM SCALE ================================ -->
+<section class="section reveal">
+  <div class="section-label">Architecture &amp; Scale</div>
+  <div class="grid-2" style="align-items:start; gap:56px;">
+    <div>
+      <h2 class="serif" style="font-size:clamp(22px,2.5vw,28px); font-weight:500; line-height:1.25; margin-bottom:14px;">
+        Synthetic data now.<br>Real data pipeline-ready.
+      </h2>
+      <p style="color:var(--paper-dim); font-size:15px; line-height:1.65; max-width:400px;">
+        The current build uses a synthetic generator covering 8 corruption types. The normalizer, matcher, policy engine, and audit store are all stateless except for the SQLite layer — which can be swapped for PostgreSQL without touching the matching logic.
+      </p>
+    </div>
+    <div class="arch-diagram reveal stagger-container">
+      <div class="arch-layer"><div class="arch-box src">CSV / API / Database</div></div>
+      <div class="arch-down">&#x2193;</div>
+      <div class="arch-layer"><div class="arch-box">Normalizer</div></div>
+      <div class="arch-down">&#x2193;</div>
+      <div class="arch-layer"><div class="arch-box">Candidate Generator (O(n&middot;k))</div></div>
+      <div class="arch-down">&#x2193;</div>
+      <div class="arch-layer"><div class="arch-box eng">Matching Engine</div></div>
+      <div class="arch-down">&#x2193;</div>
+      <div class="arch-layer"><div class="arch-box eng">Policy Engine</div></div>
+      <div class="arch-down">&#x2193;</div>
+      <div class="arch-layer" style="gap:1px; display:grid; grid-template-columns:1fr 1fr;">
+        <div class="arch-box out">Decision Store</div>
+        <div class="arch-box out">Audit Store</div>
+      </div>
+      <div class="arch-down">&#x2193;</div>
+      <div class="arch-layer"><div class="arch-box">Evaluation Engine (hidden labels)</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 10: CTA ======================================== -->
+<div class="cta-section">
+  <h2>Don&rsquo;t trust the match.<br>Verify the evidence.</h2>
+  <p>Generate a fresh holdout batch with any seed. Watch the deterministic engine reconcile it against hidden ground truth in real time.</p>
+  <div class="cta-btns">
+    <a href="/app" class="btn btn-primary" style="font-size:15px; padding:14px 28px;">OPEN LIVE DEMO &rarr;</a>
+    <a href="/app#evaluation" class="btn btn-outline">VIEW EVALUATION</a>
+  </div>
+</div>
+
+</div><!-- /.wrap -->
+
+<footer>
+  <div class="footer-brand">LEDGER/CTRL &mdash; Finance Controller &mdash; Razorpay AI Buildathon 2026</div>
+  <div class="footer-links">
+    <a href="#pipeline">Pipeline</a>
+    <a href="#evaluation">Evaluation</a>
+    <a href="#refuse">Refusals</a>
+    <a href="/app">Demo</a>
+  </div>
+</footer>
+
+<script>
+'use strict';
+
+// ── Utilities ────────────────────────────────────────────────────────────────
+function inr(n) { return '\u20b9' + new Intl.NumberFormat('en-IN', {maximumFractionDigits:0}).format(n); }
+function pct(x) { return x != null ? (x * 100).toFixed(1) + '%' : '--'; }
+function $(id) { return document.getElementById(id); }
+
+// ── Scroll reveal ────────────────────────────────────────────────────────────
+(function initReveal() {
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+})();
+
+// ── Ledger animation ─────────────────────────────────────────────────────────
+function animateLedger(rows) {
+  rows.slice(0, 3).forEach((r, i) => {
+    const el = $(('lr-' + i));
+    if (!el) return;
+    el.querySelector('.lr-sid').textContent = r.sid;
+    const amt = el.querySelector('.lr-amount');
+    if (amt) amt.textContent = r.amt;
+    const vnd = el.querySelector('.lr-vendor');
+    if (vnd) vnd.textContent = r.vendor;
+  });
+  rows.slice(0, 3).forEach((r, i) => {
+    setTimeout(() => {
+      const el = $(('lr-' + i));
+      if (!el) return;
+      const badge = el.querySelector('.status-lbl');
+      badge.classList.remove('pending');
+      const isAuto = r.decision === 'auto_close';
+      badge.classList.add(isAuto ? 'matched' : 'escalated');
+      badge.textContent = isAuto ? 'MATCHED' : 'ESCALATED';
+    }, 900 + i * 550);
+  });
+}
+
+// ── Audit block toggle ───────────────────────────────────────────────────────
+function toggleAudit() {
+  $('audit-block').classList.toggle('open');
+}
+
+function lookupAudit() {
+  const sid = $('audit-sid').value.trim();
+  if (!sid) return;
+  $('audit-content').textContent = 'Fetching\u2026';
+  $('audit-block').classList.add('open');
+  $('audit-trigger-label').textContent = sid + ' \u00b7 AUDIT RECORD';
+  fetch('/api/audit?settlement_id=' + encodeURIComponent(sid))
+    .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
+    .then(events => {
+      if (!events || events.length === 0) { $('audit-content').textContent = 'No audit events found for ' + sid + '.'; return; }
+      $('audit-content').textContent = JSON.stringify(events[0], null, 2);
+    })
+    .catch(e => { $('audit-content').textContent = 'Error: ' + e; });
+}
+
+// ── Live data fetch ──────────────────────────────────────────────────────────
+async function loadLiveData() {
+  try {
+    const batches = await fetch('/api/batches').then(r => r.ok ? r.json() : []);
+    if (!batches || batches.length === 0) return;
+    const batch = batches.find(b => b.split === 'holdout' && b.status === 'reconciled')
+                || batches.find(b => b.status === 'reconciled');
+    if (!batch) return;
+
+    const detail = await fetch('/api/batches/' + batch.id).then(r => r.ok ? r.json() : null);
+    if (!detail || !detail.metrics) return;
+    const m = detail.metrics;
+
+    // Metrics
+    ['precision','recall'].forEach(k => { const el = $(('m-' + k)); el && (el.textContent = pct(m[k]), el.classList.remove('loading')); });
+    const fmrEl = $('m-fmr'); if (fmrEl) { fmrEl.textContent = pct(m.false_match_rate); fmrEl.classList.remove('loading'); fmrEl.style.color = m.false_match_rate === 0 ? 'var(--sage)' : 'var(--rust)'; }
+    const autoEl = $('m-auto'); if (autoEl && m.records_processed) { autoEl.textContent = pct(m.auto_matched / m.records_processed); autoEl.classList.remove('loading'); }
+    const evalMeta = $('eval-meta');
+    if (evalMeta) evalMeta.textContent = 'batch ' + batch.id + ' \u00b7 seed ' + batch.seed + ' \u00b7 ' + batch.n + ' records \u00b7 ' + batch.split;
+
+    // Rail
+    const rail = $('rail-text');
+    if (rail) rail.textContent = 'BATCH\u00a0' + batch.id.substring(0, 16).toUpperCase() + '\u00a0\u2014\u00a0SEED\u00a0' + batch.seed;
+    const dlabel = $('demo-label');
+    if (dlabel) dlabel.textContent = 'LIVE BATCH \u2014 ' + batch.n + ' RECORDS';
+
+    // Exceptions for refusal section
+    const exc = await fetch('/api/batches/' + batch.id + '/exceptions?min_amount=0').then(r => r.ok ? r.json() : []);
+    if (exc && exc.length > 0) {
+      $('refuse-list').innerHTML = exc.slice(0, 3).map(e => {
+        const code = (e.reason_code || '').toUpperCase();
+        const map = {
+          'AMBIGUOUS': 'Two candidates score within tie-check delta (\u0394\u22640.05). Auto-close blocked by never_auto_close_on_tie().',
+          'LOW_CONFIDENCE': 'Top candidate score below threshold. Confidence ' + e.confidence.toFixed(2) + '. Escalated for review.',
+          'MISSING_COUNTERPART': 'Invoice or bank record absent. Cannot complete three-way match. Marked UNRESOLVED.',
+          'DUPLICATE': 'Duplicate settlement candidate detected. Auto-close blocked pending deduplication.',
+        };
+        return '<div class="refuse-item">' +
+          '<div class="ri-id">' + e.settlement_id + '</div>' +
+          '<div class="ri-reason">' + (map[code] || code + '. Conf ' + e.confidence.toFixed(2) + '. Auto-close blocked.') + '</div>' +
+          '<div class="ri-meta">' + inr(e.amount) + ' \u00b7 ' + (e.vendor || '\u2014') + ' \u00b7 conf ' + e.confidence.toFixed(2) + '</div>' +
+          '</div>';
+      }).join('');
+    }
+
+    // Ledger demo from matches
+    const matches = await fetch('/api/batches/' + batch.id + '/matches').then(r => r.ok ? r.json() : []);
+    const autos = (matches || []).filter(x => x.decision === 'auto_close').slice(0, 2);
+    const escls = (matches || []).filter(x => x.decision === 'escalate').slice(0, 1);
+    const rows = [...autos, ...escls].map(r => ({
+      sid: r.settlement_id,
+      amt: r.evidence && r.evidence.settlement_amount ? inr(r.evidence.settlement_amount) : '\u20b9\u2014',
+      vendor: (r.evidence && r.evidence.vendor_name ? r.evidence.vendor_name : 'Vendor').substring(0, 22),
+      decision: r.decision,
+    }));
+    if (rows.length >= 2) animateLedger(rows);
+
+  } catch(e) { console.log('Live data unavailable:', e.message); }
+}
+
+
+// ── Scroll-driven metric counter animation ──────────────────────────────────
+function animateValue(obj, start, end, duration, isPercent=true) {
+  let startTimestamp = null;
+  const step = (timestamp) => {
+    if (!startTimestamp) startTimestamp = timestamp;
+    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+    const val = (progress * (end - start) + start).toFixed(1);
+    obj.textContent = isPercent ? val + '%' : val;
+    if (progress < 1) {
+      window.requestAnimationFrame(step);
+    }
+  };
+  window.requestAnimationFrame(step);
+}
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      const nums = entry.target.querySelectorAll('.num[data-target]');
+      nums.forEach(n => {
+        const target = parseFloat(n.getAttribute('data-target'));
+        if (!isNaN(target) && !n.classList.contains('counted')) {
+          n.classList.add('counted');
+          animateValue(n, 0, target, 1200, true);
+        }
+      });
+    }
+  });
+}, { threshold: 0.15 });
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+});
+
+document.addEventListener('DOMContentLoaded', loadLiveData);
+</script>
+</body>
+</html>

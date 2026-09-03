@@ -1,0 +1,33 @@
+{
+  "artifact_type": "HOLDOUT_FREEZE_SPECIFICATION",
+  "run_id": "RUN-42-H-92-2AEA",
+  "seed": 42,
+  "split": "holdout",
+  "records": 237,
+  "auto_closed": 172,
+  "escalated": 65,
+  "unresolved": 0,
+  "precision": 1.0,
+  "recall": 0.8958,
+  "false_match_rate": 0.0,
+  "auto_resolution_rate": 0.7257,
+  "confusion_counts": {
+    "true_matchable_pairs": 194,
+    "recovered_true_matches": 172,
+    "wrong_auto_closes": 0,
+    "refused_for_safety": 65
+  },
+  "provenance": {
+    "matcher_version": "1.4.0",
+    "policy_version": "1.2.0",
+    "engine_architecture": "deterministic_waterfall",
+    "llm_role": "explain_only_decoupled"
+  },
+  "hashes": {
+    "dataset_sha256": "f39cf2c37bedbb297d86d20dce9dca07c3e39e9613f2b46016cc3d472bd5a076",
+    "ground_truth_sha256": "7e92b3fea249bf17cf1e66f889a96de0984535f97c794918803676d54f22a549",
+    "config_sha256": "2535f6943de4e59b0c5a2140c95ae415f6af4ded74eab59cedc5174d4fc87767"
+  },
+  "frozen": true,
+  "frozen_at": "2026-08-20T12:00:00Z"
+}

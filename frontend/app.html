@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="LEDGER/CTRL — Live settlement reconciliation console.">
+<title>LEDGER/CTRL — Console</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/design.css">
+<style>
+body { display: flex; flex-direction: column; min-height: 100vh; }
+.topbar { display: flex; justify-content: space-between; align-items: center; padding: 0 32px; height: 56px; border-bottom: 1px solid var(--rule); background: var(--ink); flex-shrink: 0; position: sticky; top: 0; z-index: 40; }
+.tb-brand { font-family: var(--mono); font-size: 13px; letter-spacing: .02em; }
+.tb-brand span { color: var(--paper-dim); }
+.tb-env { display: flex; gap: 8px; align-items: center; }
+.env-pill { font-family: var(--mono); font-size: 10px; letter-spacing: .06em; padding: 3px 8px; border: 1px solid var(--rule); border-radius: 2px; color: var(--paper-faint); }
+.env-pill.live { border-color: var(--sage-brd); color: var(--sage); }
+.tb-home { font-family: var(--mono); font-size: 12px; color: var(--paper-dim); border-bottom: 1px solid var(--rule); padding-bottom: 1px; }
+.tb-home:hover { color: var(--paper); }
+.tabnav { display: flex; border-bottom: 1px solid var(--rule); background: var(--ink); flex-shrink: 0; position: sticky; top: 56px; z-index: 39; padding: 0 32px; gap: 0; }
+.tab-btn { font-family: var(--mono); font-size: 12px; letter-spacing: .04em; padding: 13px 20px; color: var(--paper-dim); border-bottom: 2px solid transparent; transition: color .15s, border-color .15s; text-transform: uppercase; background: none; border-top: none; border-left: none; border-right: none; cursor: pointer; }
+.tab-btn:hover { color: var(--paper); }
+.tab-btn.active { color: var(--paper); border-bottom-color: var(--amber); }
+.content { flex: 1; }
+.tab-panel { display: none; padding: 32px; max-width: 1200px; margin: 0 auto; }
+.tab-panel.active { display: block; }
+.controls-bar { display: flex; align-items: center; gap: 16px; padding: 16px 20px; background: var(--slate); border: 1px solid var(--rule); border-radius: var(--r); margin-bottom: 24px; flex-wrap: wrap; }
+.ctrl-field { display: flex; flex-direction: column; gap: 4px; }
+.field-label { font-family: var(--mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--paper-dim); }
+.input-field, .select-field { font-family: var(--mono); font-size: 13px; background: var(--ink); border: 1px solid var(--rule); color: var(--paper); padding: 7px 10px; border-radius: 2px; }
+.ctrl-actions { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+.btn-primary { font-family: var(--mono); font-size: 12px; letter-spacing: .04em; padding: 9px 18px; background: var(--paper); color: var(--ink); font-weight: 600; border: none; border-radius: 2px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; text-transform: uppercase; }
+.btn-primary:hover { background: #fff; }
+.btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+.btn-sec { font-family: var(--mono); font-size: 12px; padding: 8px 14px; background: transparent; color: var(--paper-dim); border: 1px solid var(--rule); border-radius: 2px; cursor: pointer; text-transform: uppercase; }
+.btn-sec:hover { color: var(--paper); border-color: var(--paper-dim); }
+.spinner { width: 12px; height: 12px; border: 2px solid var(--ink); border-top-color: transparent; border-radius: 50%; animation: spin .6s linear infinite; display: none; }
+.spinner.active { display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.stages-bar { display: flex; gap: 8px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 4px; }
+.stage-chip { font-family: var(--mono); font-size: 11px; padding: 5px 12px; border: 1px solid var(--rule); color: var(--paper-faint); border-radius: 2px; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.stage-chip.active { border-color: var(--amber-brd); color: var(--amber); background: var(--amber-bg); }
+.stage-chip.done { border-color: var(--sage-brd); color: var(--sage); background: var(--sage-bg); }
+.summary-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; margin-bottom: 28px; }
+.summary-card { background: var(--slate); border: 1px solid var(--rule); padding: 16px; border-radius: var(--r); }
+.summary-card .sc-num { font-family: var(--mono); font-size: 26px; font-weight: 500; color: var(--paper); margin-bottom: 4px; }
+.summary-card .sc-lbl { font-family: var(--mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--paper-dim); }
+.records-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.records-hdr h3 { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--paper-dim); font-weight: 500; }
+.records-filter { display: flex; gap: 10px; align-items: center; }
+.table-wrap { border: 1px solid var(--rule); border-radius: var(--r); overflow: hidden; background: var(--slate); }
+.rec-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+.rec-table th { font-family: var(--mono); font-size: 10px; letter-spacing: .07em; text-transform: uppercase; color: var(--paper-dim); padding: 10px 14px; border-bottom: 1px solid var(--rule); background: var(--ink); font-weight: 500; }
+.rec-table td { padding: 11px 14px; border-bottom: 1px solid var(--rule-light); font-family: var(--mono); font-size: 12px; color: var(--paper); }
+.rec-table tr:last-child td { border-bottom: none; }
+.rec-table tr:hover td { background: var(--slate-2); cursor: pointer; }
+.badge { display: inline-block; font-family: var(--mono); font-size: 10px; letter-spacing: .04em; padding: 2px 7px; border-radius: 2px; font-weight: 500; }
+.badge-auto { background: var(--sage-bg); color: var(--sage); border: 1px solid var(--sage-brd); }
+.badge-escalate { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-brd); }
+.badge-unresolved { background: transparent; color: var(--paper-faint); border: 1px solid var(--rule); }
+.drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 50; display: none; opacity: 0; transition: opacity .2s; }
+.drawer-overlay.open { display: block; opacity: 1; }
+.drawer { position: fixed; right: 0; top: 0; bottom: 0; width: 560px; max-width: 95vw; background: var(--ink); border-left: 1px solid var(--rule); z-index: 51; transform: translateX(100%); transition: transform .25s cubic-bezier(.16,1,.3,1); display: flex; flex-direction: column; overflow-y: auto; }
+.drawer.open { transform: translateX(0); }
+.drawer-hdr { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid var(--rule); position: sticky; top: 0; background: var(--ink); z-index: 10; }
+.drawer-hdr h3 { font-family: var(--mono); font-size: 14px; color: var(--paper); font-weight: 500; }
+.drawer-close { background: none; border: none; color: var(--paper-dim); font-size: 20px; cursor: pointer; padding: 0 4px; }
+.eval-header { margin-bottom: 24px; }
+.eval-header h2 { font-family: var(--serif); font-size: 28px; font-weight: 400; color: var(--paper); margin-bottom: 6px; }
+.eval-header p { font-size: 14px; color: var(--paper-dim); max-width: 680px; }
+.section-label { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--paper-dim); margin-bottom: 12px; }
+.metrics-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 32px; }
+.metric-cell { background: var(--slate); border: 1px solid var(--rule); padding: 18px; border-radius: var(--r); }
+.metric-cell .num { font-family: var(--mono); font-size: 32px; font-weight: 500; color: var(--paper); margin-bottom: 4px; }
+.metric-cell .num.loading { opacity: .4; }
+.metric-cell .lbl { font-family: var(--mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--paper-dim); margin-bottom: 2px; }
+.metric-cell .def { font-size: 11px; color: var(--paper-faint); font-family: var(--mono); }
+.eval-methodology { background: var(--slate); border: 1px solid var(--rule); padding: 20px; border-radius: var(--r); margin-bottom: 32px; font-size: 13px; color: var(--paper-dim); line-height: 1.6; }
+.eval-methodology strong { color: var(--paper); }
+.eval-flow { display: flex; align-items: center; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.eval-flow-step { font-family: var(--mono); font-size: 10px; letter-spacing: .06em; padding: 4px 10px; border: 1px solid var(--rule); border-radius: 2px; color: var(--paper-dim); }
+.eval-flow-arrow { color: var(--paper-faint); font-size: 12px; }
+.slices-table-wrap { border: 1px solid var(--rule); border-radius: var(--r); overflow: hidden; background: var(--slate); }
+.slices-table { width: 100%; border-collapse: collapse; text-align: left; }
+.slices-table th { font-family: var(--mono); font-size: 10px; letter-spacing: .07em; text-transform: uppercase; color: var(--paper-dim); padding: 10px 14px; border-bottom: 1px solid var(--rule); background: var(--ink); }
+.slices-table td { padding: 11px 14px; border-bottom: 1px solid var(--rule-light); font-family: var(--mono); font-size: 12px; color: var(--paper); }
+.slices-table tr:last-child td { border-bottom: none; }
+.td-name { font-weight: 500; }
+.td-good { color: var(--sage); }
+.td-bad  { color: var(--rust); }
+.td-bar  { display: flex; align-items: center; gap: 8px; }
+.td-bar-track { width: 60px; height: 4px; background: var(--rule); border-radius: 2px; overflow: hidden; }
+.td-bar-fill  { height: 100%; background: var(--amber); border-radius: 2px; }
+.empty-state { text-align: center; padding: 48px 24px; color: var(--paper-faint); font-family: var(--mono); font-size: 13px; }
+.empty-state .es-icon { font-size: 28px; margin-bottom: 8px; opacity: .5; }
+.empty-state code { color: var(--paper-dim); }
+.upload-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 24px; }
+.drop-zone { background: var(--slate); border: 2px dashed var(--rule); border-radius: var(--r); padding: 24px 16px; text-align: center; cursor: pointer; transition: border-color .15s, background .15s; }
+.drop-zone:hover, .drop-zone.dragover { border-color: var(--amber); background: var(--slate-2); }
+.dz-title { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--paper); margin-bottom: 6px; font-weight: 600; }
+.dz-sub { font-size: 12px; color: var(--paper-faint); margin-bottom: 12px; }
+.dz-file { font-family: var(--mono); font-size: 11px; color: var(--sage); word-break: break-all; }
+@media (max-width: 768px) { .upload-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand-logo">
+    <svg class="brand-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3.5" y="3.5" width="17" height="17" rx="3.5" stroke="#e7e3d8" stroke-width="1.5"/>
+      <path d="M7 12H17" stroke="#e7e3d8" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M12 7V17" stroke="#e7e3d8" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="12" cy="12" r="2.5" fill="#c98a3b"/>
+    </svg>
+    <span class="brand-name">LEDGER<span class="brand-slash">/</span>CTRL</span>
+    <span class="brand-badge">RECONCILIATION CONTROL</span>
+  </div>
+  <div class="tb-env">
+    <span class="env-pill">SYNTHETIC DATA</span>
+    <span class="env-pill live" id="env-split-pill">NO RUN</span>
+    <span class="env-pill" id="env-run-pill">—</span>
+    <a href="/" class="tb-home">&larr; Overview</a>
+  </div>
+</div>
+
+<nav class="tabnav" role="tablist">
+  <button class="tab-btn active" onclick="switchTab('pipeline')"   role="tab" aria-selected="true"  id="tab-pipeline"  ><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0-0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3v4a1 1 0 0 1-1 1H5a2 2 0 0 1-1 1H5a2 2 0 0 1-2-2V7"/><path d="M16 11h.01"/></svg> Pipeline</button>
+  <button class="tab-btn"        onclick="switchTab('evaluation')" role="tab" aria-selected="false" id="tab-evaluation"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg> Evaluation</button>
+  <button class="tab-btn"        onclick="switchTab('exceptions')" role="tab" aria-selected="false" id="tab-exceptions"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Exceptions</button>
+  <button class="tab-btn"        onclick="switchTab('audit')"      role="tab" aria-selected="false" id="tab-audit"     >Audit &amp; Decision Replay</button>
+</nav>
+
+<main class="content">
+
+<!-- ═══════════════════════════════════════════════════════════════ PIPELINE -->
+<div class="tab-panel active" id="panel-pipeline" role="tabpanel">
+
+  <div class="banner" id="twin-banner"></div>
+
+  <div class="controls-bar">
+    <div class="ctrl-field">
+      <label class="field-label" for="n">Records</label>
+      <input class="input-field" type="number" id="n" value="200" min="10" max="1000" style="width:100px;">
+    </div>
+    <div class="ctrl-field">
+      <label class="field-label" for="seed">Seed</label>
+      <input class="input-field" type="number" id="seed" value="42" style="width:90px;">
+    </div>
+    <div class="ctrl-field">
+      <label class="field-label" for="split">Split</label>
+      <select class="select-field" id="split" style="width:130px;" title="holdout = locked thresholds, for reporting. dev = threshold tuning only.">
+        <option value="holdout" selected>holdout</option>
+        <option value="dev">dev (tuning only)</option>
+      </select>
+    </div>
+    <div class="ctrl-field">
+      <label class="field-label" for="use-llm">LLM</label>
+      <select class="select-field" id="use-llm" style="width:110px;">
+        <option value="true">enabled</option>
+        <option value="false">disabled</option>
+      </select>
+    </div>
+    <div class="ctrl-actions">
+      <button class="btn-sec" id="btn-export" onclick="exportReportCSV()" title="Export full reconciliation report as CSV">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> EXPORT REPORT
+      </button>
+      <button class="btn-sec" id="btn-ai-off" onclick="runAiOffCheck()" disabled>AI OFF CHECK</button>
+      <button class="btn-sec" id="btn-replay" onclick="runReplay()" disabled>REPLAY</button>
+      <button class="btn-sec" id="btn-rerun" onclick="rerunLast()" disabled title="Re-run reconciliation on the same generated records">Re-run</button>
+      <button class="btn-primary" id="btn-run" onclick="runFull()">
+        <span class="spinner" id="main-spinner"></span>
+        GENERATE &amp; RECONCILE
+      </button>
+    </div>
+  </div>
+
+  <div class="stages-bar" id="stages-wrap" style="display:none;">
+    <div class="stage-chip" id="stage-generate"><span>01</span> Generate</div>
+    <div class="stage-chip" id="stage-normalize"><span>02</span> Normalize</div>
+    <div class="stage-chip" id="stage-match"><span>03</span> Match &amp; Block</div>
+    <div class="stage-chip" id="stage-policy"><span>04</span> Policy Gate</div>
+    <div class="stage-chip" id="stage-audit"><span>05</span> Audit Persist</div>
+    <div class="stage-chip" id="stage-eval"><span>06</span> Evaluate</div>
+    <div class="stage-chip" id="stage-done">&#x2714; Complete</div>
+  </div>
+
+  <div id="summary-wrap" style="display:none; margin-bottom:28px;">
+    <!-- Canonical Run Header -->
+    <div class="eval-methodology" style="margin-bottom:16px; padding:18px 24px; border-left:4px solid var(--amber);">
+      <div style="display:flex; justify-content:space-between; align-items:baseline;">
+        <div style="font-family:var(--mono); font-size:14px; font-weight:600; color:var(--paper);" id="run-card-title">
+          RECONCILE RUN: Loading...
+        </div>
+        <div style="font-family:var(--mono); font-size:11px; color:var(--paper-dim);" id="run-card-sub">
+          -- records processed
+        </div>
+      </div>
+      <div style="font-family:var(--mono); font-size:11px; color:var(--paper-faint); margin-top:6px;" id="run-card-meta">
+        Canonical Run Identity: --
+      </div>
+    </div>
+
+    <!-- Executive Summary 4-card row -->
+    <div class="summary-grid" style="grid-template-columns: repeat(4,1fr);">
+      <div class="summary-card" style="border-top:3px solid var(--sage);"><div class="sc-num" id="s-auto" style="color:var(--sage)">--</div><div class="sc-lbl">AUTO_CLOSED</div></div>
+      <div class="summary-card" style="border-top:3px solid var(--amber);"><div class="sc-num" id="s-esc" style="color:var(--amber)">--</div><div class="sc-lbl">ESCALATED (Requires Investigation)</div></div>
+      <div class="summary-card" style="border-top:3px solid var(--rule);"><div class="sc-num" id="s-unres">--</div><div class="sc-lbl">UNRESOLVED</div></div>
+      <div class="summary-card" style="border-top:3px solid var(--paper);"><div class="sc-num" id="s-rate" style="color:var(--paper)">--</div><div class="sc-lbl">AUTO-RESOLUTION RATE</div></div>
+    </div>
+
+    <!-- Secondary proof row -->
+    <div class="summary-grid" style="grid-template-columns: repeat(5,1fr); margin-top: -12px;">
+      <div class="summary-card"><div class="sc-num" id="m-prec" style="font-size:22px;">--</div><div class="sc-lbl">Precision</div></div>
+      <div class="summary-card"><div class="sc-num" id="m-rec" style="font-size:22px;">--</div><div class="sc-lbl">Recall</div></div>
+      <div class="summary-card"><div class="sc-num" id="m-fmr2" style="font-size:22px;">--</div><div class="sc-lbl">False-Match Rate</div></div>
+      <div class="summary-card"><div class="sc-num" id="s-esc-val" style="font-size:22px; color:var(--amber);">--</div><div class="sc-lbl">Exception Value</div></div>
+      <div class="summary-card"><div class="sc-num" id="m-drps" style="font-size:22px;">--</div><div class="sc-lbl">Throughput</div></div>
+    </div>
+  </div>
+
+  <div class="records-hdr">
+    <h3>Reconciliation Output</h3>
+    <div class="records-filter">
+      <input class="input-field" type="text" id="search-q" placeholder="Filter ID or vendor..." oninput="filterTable()" style="width:200px;">
+      <select class="select-field" id="filter-dec" onchange="filterTable()" style="width:140px;">
+        <option value="">All decisions</option>
+        <option value="auto_close">AUTO_CLOSE</option>
+        <option value="escalate">ESCALATE</option>
+        <option value="unresolved">UNRESOLVED</option>
+      </select>
+      <span style="font-family:var(--mono); font-size:11px; color:var(--paper-dim);" id="row-count"></span>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="rec-table">
+      <thead>
+        <tr>
+          <th>Settlement ID</th><th>Invoice ID</th><th>Decision</th><th>Reason Code</th><th>Confidence</th><th>Match Type</th>
+        </tr>
+      </thead>
+      <tbody id="records-tbody">
+        <tr><td colspan="6"><div class="empty-state"><div class="es-icon">&#x25cb;</div><p>No evaluation run yet. Click <strong>GENERATE &amp; RECONCILE</strong> above.</p></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ EVALUATION -->
+<div class="tab-panel" id="panel-evaluation" role="tabpanel">
+  <div class="eval-header">
+    <h2>Holdout evaluation</h2>
+    <p>One canonical run. Precision is paired with coverage. Ground truth is hidden from the matcher. Multi-seed numbers measure synthetic-batch stability, not production generalization.</p>
+  </div>
+
+  <div class="eval-methodology" id="ev-report-head" style="border-left:4px solid var(--amber);">
+    <div style="font-family:var(--mono); font-size:13px; font-weight:600; color:var(--paper);" id="ev-run-title">No run yet</div>
+    <div style="font-family:var(--mono); font-size:11px; color:var(--paper-dim); margin-top:6px;" id="ev-run-lineage">Generate a holdout batch from Pipeline.</div>
+  </div>
+
+  <div class="section-label">Primary metrics</div>
+  <div class="metrics-grid" id="eval-metrics-grid">
+    <div class="metric-cell"><div class="num loading" id="ev-prec">--</div><div class="lbl">Match precision</div><div class="def" id="ev-prec-def">-- / -- auto-closes correct</div></div>
+    <div class="metric-cell"><div class="num loading" id="ev-rec">--</div><div class="lbl">Match recall</div><div class="def" id="ev-rec-def">-- / -- true matches recovered</div></div>
+    <div class="metric-cell"><div class="num loading" id="ev-fmr">--</div><div class="lbl">False-match rate</div><div class="def" id="ev-fmr-def">0 / -- wrong auto-closes</div></div>
+    <div class="metric-cell"><div class="num loading" id="ev-auto">--</div><div class="lbl">Auto-resolution</div><div class="def" id="ev-auto-def">-- / -- total records</div></div>
+  </div>
+  <div style="font-family:var(--mono); font-size:11px; color:var(--paper-faint); margin-top:-16px; margin-bottom:16px;" id="ev-meta">No batch selected — go to Pipeline tab and click GENERATE &amp; RECONCILE.</div>
+  <div id="ev-rps" style="margin-bottom:16px;"></div>
+
+  <div class="section-label">Confusion counts</div>
+  <div class="summary-grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:32px;">
+    <div class="summary-card"><div class="sc-num" id="ev-c-ok">--</div><div class="sc-lbl">Correct auto-close</div></div>
+    <div class="summary-card"><div class="sc-num" id="ev-c-wrong">--</div><div class="sc-lbl">Wrong auto-close</div></div>
+    <div class="summary-card"><div class="sc-num" id="ev-c-miss">--</div><div class="sc-lbl">Missed true matches</div></div>
+    <div class="summary-card"><div class="sc-num" id="ev-c-ref">--</div><div class="sc-lbl">Correct refusals</div></div>
+  </div>
+
+  <!-- Multi-seed Benchmark -->
+  <div class="section-label" style="display:flex; justify-content:space-between; align-items:center;">
+    <span>Multi-Seed Reproducibility Benchmark</span>
+    <button class="btn-sec" onclick="runSeedBenchmark()" style="font-size:10px; padding:4px 10px;">RUN BENCHMARK (4 SEEDS)</button>
+  </div>
+  <p style="font-size:12px; color:var(--paper-dim); margin-bottom:12px;">Same matcher and frozen thresholds on independently generated synthetic batches. This is stability evidence, not a production-generalization claim.</p>
+  <div class="slices-table-wrap" style="margin-bottom:32px;">
+    <table class="slices-table">
+      <thead>
+        <tr><th>Seed</th><th>N</th><th>Auto-Closed</th><th>Precision</th><th>Recall</th><th>FMR</th><th>Auto-Rate</th><th>RPS</th></tr>
+      </thead>
+      <tbody id="seed-bench-tbody">
+        <tr><td colspan="7"><div class="empty-state" style="padding:20px;"><p>Click <strong>RUN BENCHMARK (4 SEEDS)</strong> to run multi-seed stability check.</p></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Scaling Throughput Benchmark -->
+  <div class="section-label" style="display:flex; justify-content:space-between; align-items:center;">
+    <span>Scaling &amp; Blocking Efficiency</span>
+    <button class="btn-sec" onclick="runThroughputBenchmark()" style="font-size:10px; padding:4px 10px;">MEASURE SCALING (100..2000)</button>
+  </div>
+  <p style="font-size:12px; color:var(--paper-dim); margin-bottom:12px;">Demonstrates blocking index candidate reduction ratio vs naive O(N²) comparison pool.</p>
+  <div class="slices-table-wrap" style="margin-bottom:32px;">
+    <table class="slices-table">
+      <thead>
+        <tr><th>N Records</th><th>Time (s)</th><th>Throughput (rec/s)</th><th>Scored Candidates</th><th>Naive O(N²) Pairs</th><th>Blocking Reduction</th></tr>
+      </thead>
+      <tbody id="tp-bench-tbody">
+        <tr><td colspan="6"><div class="empty-state" style="padding:20px;"><p>Click <strong>MEASURE SCALING</strong> to run scaling benchmark.</p></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Adversarial Failure Lab -->
+  <div class="section-label" style="display:flex; justify-content:space-between; align-items:center;">
+    <span>Adversarial Safety Lab</span>
+    <button class="btn-sec" onclick="runAdversarialLab()" style="font-size:10px; padding:4px 10px;">RUN SAFETY LAB</button>
+  </div>
+  <p style="font-size:12px; color:var(--paper-dim); margin-bottom:12px;">Constructed fixtures — not sampled from the generator and not used to tune holdout thresholds.</p>
+  <div class="slices-table-wrap" style="margin-bottom:32px;">
+    <table class="slices-table">
+      <thead>
+        <tr><th>Test Scenario</th><th>Injected Condition</th><th>Expected Policy Action</th><th>Actual System Result</th><th>Status</th></tr>
+      </thead>
+      <tbody id="adv-bench-tbody">
+        <tr><td colspan="5"><div class="empty-state" style="padding:20px;"><p>Click <strong>RUN SAFETY LAB</strong> to verify refusal guarantees.</p></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Slices Breakdown -->
+  <div class="section-label">Per-Corruption-Type Breakdown</div>
+  <div class="slices-table-wrap">
+    <table class="slices-table">
+      <thead>
+        <tr><th>Corruption type</th><th>N</th><th>Auto-closed</th><th>Escalated</th><th>Recall (auto)</th></tr>
+      </thead>
+      <tbody id="slices-tbody">
+        <tr><td colspan="5"><div class="empty-state" style="padding:32px 16px;"><p>Run a reconciliation batch first.</p></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ EXCEPTIONS -->
+<div class="tab-panel" id="panel-exceptions" role="tabpanel">
+  <div class="eval-header">
+    <h2>Exceptions Console</h2>
+    <p>Records where deterministic policy refused auto-close due to ambiguity, amount drift, or missing counterparts. Click any row for full evidence.</p>
+    <div style="font-family:var(--mono); font-size:12px; color:var(--amber); margin-top:8px; margin-bottom:16px;" id="exc-subtitle">0 exceptions · ₹0 value requiring investigation</div>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:16px; font-family:var(--mono); font-size:11px;">
+      <div style="background:var(--slate-2); border:1px solid var(--rule); padding:8px 12px; border-radius:2px;">
+        <strong style="color:var(--amber);">ESCALATE:</strong> Candidate(s) exist, but policy does not authorize automatic closure (e.g. tie margin, amount drift).
+      </div>
+      <div style="background:var(--slate-2); border:1px solid var(--rule); padding:8px 12px; border-radius:2px;">
+        <strong style="color:var(--paper-dim);">UNRESOLVED:</strong> No valid counterpart was established across source systems.
+      </div>
+    </div>
+    <div class="summary-grid" id="exc-reason-group-grid" style="grid-template-columns: repeat(4,1fr); display:none; margin-bottom:20px;">
+      <div class="summary-card"><div class="sc-num" id="exc-val-amb" style="font-size:20px; color:var(--amber);">₹0</div><div class="sc-lbl">AMBIGUOUS</div></div>
+      <div class="summary-card"><div class="sc-num" id="exc-val-low" style="font-size:20px; color:var(--amber);">₹0</div><div class="sc-lbl">LOW CONFIDENCE</div></div>
+      <div class="summary-card"><div class="sc-num" id="exc-val-dup" style="font-size:20px; color:var(--amber);">₹0</div><div class="sc-lbl">DUPLICATE</div></div>
+      <div class="summary-card"><div class="sc-num" id="exc-val-noc" style="font-size:20px; color:var(--amber);">₹0</div><div class="sc-lbl">MISSING COUNTERPART</div></div>
+    </div>
+  </div>
+
+  <div class="records-filter" style="margin-bottom:16px;">
+    <input class="input-field" type="text" id="exc-search" placeholder="Search ID or vendor..." oninput="filterExceptions()" style="width:220px;">
+    <select class="select-field" id="exc-reason" onchange="filterExceptions()" style="width:180px;">
+      <option value="">All reason codes</option>
+      <option value="AMBIGUOUS_CANDIDATES">AMBIGUOUS_CANDIDATES</option>
+      <option value="DUPLICATE_CANDIDATE">DUPLICATE_CANDIDATE</option>
+      <option value="MISSING_COUNTERPART">MISSING_COUNTERPART</option>
+      <option value="AMOUNT_VARIANCE">AMOUNT_VARIANCE</option>
+      <option value="CURRENCY_MISMATCH">CURRENCY_MISMATCH</option>
+      <option value="LOW_CONFIDENCE">LOW_CONFIDENCE</option>
+      <option value="NO_CONFIDENT_MATCH">NO_CONFIDENT_MATCH</option>
+    </select>
+  </div>
+
+  <div class="table-wrap">
+    <table class="rec-table">
+      <thead>
+        <tr><th>Settlement ID</th><th>Amount</th><th>Vendor</th><th>Decision</th><th>Reason Code</th><th>Confidence</th></tr>
+      </thead>
+      <tbody id="exc-tbody">
+        <tr><td colspan="6"><div class="empty-state"><div class="es-icon">&#x25cb;</div><p>No exceptions found. Run a reconciliation batch first.</p></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ AUDIT -->
+<div class="tab-panel" id="panel-audit" role="tabpanel">
+  <div class="eval-header">
+    <h2>Audit Inspection</h2>
+    <p>Look up immutable audit trails per settlement record. Shows run ID, matcher version, policy decisions, and candidate score snapshots.</p>
+  </div>
+
+  <div style="display:flex; gap:10px; margin-bottom:24px;">
+    <input class="input-field" type="text" id="audit-search-input" placeholder="Enter Settlement ID (e.g. S-b441-0001)..." style="width:320px;">
+    <button class="btn-primary" onclick="searchAudit()">INSPECT AUDIT TRAIL</button>
+  </div>
+
+  <div id="audit-events-wrap">
+    <div class="empty-state"><div class="es-icon">&#x1f4cb;</div><p>Enter a settlement ID above to view its full audit history.</p></div>
+  </div>
+</div>
+
+</main>
+
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer" tabindex="-1">
+  <div class="drawer-hdr">
+    <h3 id="drawer-title">Settlement Detail</h3>
+    <button class="drawer-close" onclick="closeDrawer()">&times;</button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

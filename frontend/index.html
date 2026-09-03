@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Finance Controller — Settlement Reconciliation</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+
+  <!-- Architecture hero: frames the project before the demo starts -->
+  <div class="arch-card">
+    <p class="arch-title">How this works</p>
+    <p>
+      Settlement → Invoice → Bank matched by a <strong>deterministic waterfall</strong>.
+      Three independent gates must pass before AUTO_CLOSE is written.
+      The LLM explains ESCALATE cases only — it never writes a decision.
+    </p>
+    <div class="arch-gates">
+      <span class="gate-chip highlight">① Score ≥ 0.90</span>
+      <span class="gate-chip highlight">② No tie (Δ &gt; 0.05)</span>
+      <span class="gate-chip highlight">③ Both counterparts present</span>
+      <span class="gate-chip">LLM = explain only</span>
+      <span class="gate-chip">Thresholds locked on dev seed=42</span>
+    </div>
+  </div>
+
+  <header class="top">
+    <div>
+      <p class="kicker">Razorpay AI Buildathon · Finance Controller</p>
+      <h1>Settlement recon <span>does not guess</span></h1>
+    </div>
+    <p class="lede">Deterministic match first. Policy gate second. LLM explains review cases only — it never writes AUTO_CLOSE.</p>
+  </header>
+
+  <section class="controls">
+    <label>Records
+      <input id="n" type="number" min="20" max="2000" value="200" />
+    </label>
+    <label>Seed <span class="hint">(blank = fresh)</span>
+      <input id="seed" type="text" placeholder="live random" />
+    </label>
+    <label>Split
+      <select id="split">
+        <option value="holdout" selected>holdout (report these numbers)</option>
+        <option value="dev">dev (threshold tuning only)</option>
+      </select>
+    </label>
+    <button id="btn-run" class="primary" type="button">
+      Generate fresh + reconcile<span class="kbd">↵</span>
+    </button>
+    <button id="btn-again" type="button" disabled>Run again on this batch</button>
+  </section>
+
+  <!-- Status line with spinner -->
+  <div class="status-wrap">
+    <div class="spinner" id="spinner"></div>
+    <p id="status" class="status">Generate a batch the matcher has never seen. Ground-truth labels stay in a separate table.</p>
+  </div>
+
+  <!-- Twin-refused alert: surfaces when ambiguous twins are detected -->
+  <div class="twin-banner" id="twin-banner">
+    <span class="twin-icon">⚠</span>
+    <span id="twin-msg">Ambiguous twins detected and refused auto-close by the tie-check.</span>
+  </div>
+
+  <!-- 7 metric cards: added deterministic throughput -->
+  <section class="metrics" id="metrics">
+    <article><small>Precision</small><strong id="m-p">—</strong></article>
+    <article><small>Recall</small><strong id="m-r">—</strong></article>
+    <article><small>False-match rate</small><strong id="m-fmr">—</strong></article>
+    <article><small>Exception rate</small><strong id="m-ex">—</strong></article>
+    <article><small>Auto-close</small><strong id="m-auto">—</strong></article>
+    <article class="det-rps"><small>Matcher speed</small><strong id="m-det">—</strong></article>
+    <article><small>Total wall time</small><strong id="m-tps">—</strong></article>
+  </section>
+
+  <section class="grid">
+    <div class="panel">
+      <header>
+        <h2>Refused to auto-close</h2>
+        <p>The differentiator. Every ESCALATE / UNRESOLVED, ranked by ₹.</p>
+      </header>
+      <div class="toolbar">
+        <input id="min-amt" type="number" placeholder="Min amount ₹" />
+        <input id="why" type="text" placeholder="Audit: settlement id e.g. S-…" />
+        <button id="btn-why" type="button">Why this record?</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Settlement</th>
+              <th>₹</th>
+              <th>Vendor</th>
+              <th>Decision</th>
+              <th>Reason</th>
+              <th>Conf</th>
+            </tr>
+          </thead>
+          <tbody id="exc-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <header>
+        <h2>Slice honesty</h2>
+        <p>Corruption type vs what the matcher actually did.</p>
+      </header>
+      <div id="slices" class="slices"></div>
+      <header class="sub">
+        <h2>Where it was wrong</h2>
+        <p>False auto-closes against hidden ground truth. A zero here on every run looks staged.</p>
+      </header>
+      <div class="log-header">
+        <span class="log-count" id="false-count"></span>
+      </div>
+      <pre id="false" class="log">No run yet.</pre>
+    </div>
+  </section>
+
+  <section class="panel audit-panel">
+    <header>
+      <h2>Audit trail</h2>
+      <p id="audit-meta">Queryable evidence — not print statements.</p>
+    </header>
+    <pre id="audit" class="log">Pick a refused row or paste a settlement id.</pre>
+  </section>
+
+  <footer>
+    <span id="batch-meta">No batch</span>
+    <span class="footer-tag">Tie-check: <code>matcher/policy.py → never_auto_close_on_tie</code></span>
+    <span class="footer-tag">Thresholds: dev seed=42 · not holdout</span>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

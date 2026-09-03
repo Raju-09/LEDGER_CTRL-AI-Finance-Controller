@@ -1,0 +1,119 @@
+{
+  "generate": {
+    "batch_id": "B827361-250-H-884f",
+    "seed": 827361,
+    "n_settlements": 292,
+    "n_invoices": 240,
+    "n_bank": 254,
+    "split": "holdout",
+    "corruption_mix": {
+      "vendor_variation": 27,
+      "amount_delta": 25,
+      "exact": 113,
+      "duplicate": 22,
+      "date_shift": 35,
+      "orphan": 23,
+      "ambiguous_twin": 7,
+      "partial": 40
+    }
+  },
+  "metrics": {
+    "records_processed": 292,
+    "auto_matched": 229,
+    "escalated": 63,
+    "unresolved": 0,
+    "precision": 0.9913,
+    "recall": 0.919,
+    "false_match_rate": 0.0087,
+    "exception_rate": 0.2158,
+    "throughput_rps": 97.0,
+    "elapsed_ms": 3010.4
+  },
+  "slices": {
+    "vendor_variation": {
+      "n": 27,
+      "auto_close": 27,
+      "escalate": 0,
+      "unresolved": 0,
+      "correct_auto": 27,
+      "false_auto": 0
+    },
+    "amount_delta": {
+      "n": 25,
+      "auto_close": 25,
+      "escalate": 0,
+      "unresolved": 0,
+      "correct_auto": 25,
+      "false_auto": 0
+    },
+    "exact": {
+      "n": 113,
+      "auto_close": 113,
+      "escalate": 0,
+      "unresolved": 0,
+      "correct_auto": 113,
+      "false_auto": 0
+    },
+    "duplicate": {
+      "n": 22,
+      "auto_close": 0,
+      "escalate": 22,
+      "unresolved": 0,
+      "correct_auto": 0,
+      "false_auto": 0
+    },
+    "date_shift": {
+      "n": 35,
+      "auto_close": 34,
+      "escalate": 1,
+      "unresolved": 0,
+      "correct_auto": 34,
+      "false_auto": 0
+    },
+    "orphan": {
+      "n": 23,
+      "auto_close": 1,
+      "escalate": 22,
+      "unresolved": 0,
+      "correct_auto": 0,
+      "false_auto": 1
+    },
+    "ambiguous_twin": {
+      "n": 7,
+      "auto_close": 0,
+      "escalate": 7,
+      "unresolved": 0,
+      "correct_auto": 0,
+      "false_auto": 0
+    },
+    "partial": {
+      "n": 40,
+      "auto_close": 29,
+      "escalate": 11,
+      "unresolved": 0,
+      "correct_auto": 28,
+      "false_auto": 1
+    }
+  },
+  "false_matches": [
+    {
+      "settlement_id": "S-H-884f-0024",
+      "why": "auto_closed_orphan",
+      "predicted_invoice": "I-H-884f-0066",
+      "true_invoice": null
+    },
+    {
+      "settlement_id": "S-H-884f-0237-P2",
+      "why": "wrong_counterpart",
+      "predicted_invoice": "I-H-884f-0215",
+      "true_invoice": "I-H-884f-0237",
+      "predicted_bank": "B-H-884f-0237-P2",
+      "true_bank": "B-H-884f-0237-P2",
+      "corruption": "partial"
+    }
+  ],
+  "policy_note": {
+    "auto_closed_ambiguous_twins": [],
+    "tie_check": "never_auto_close_on_tie is an explicit function in matcher/policy.py"
+  }
+}
