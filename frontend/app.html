@@ -142,7 +142,7 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 
   <div class="controls-bar">
     <div class="ctrl-field">
-      <label class="field-label" for="n">Records</label>
+      <label class="field-label" for="n" title="Base generator count (expanded to ~237 observed records via corruptions & partials)">Base Records</label>
       <input class="input-field" type="number" id="n" value="200" min="10" max="1000" style="width:100px;">
     </div>
     <div class="ctrl-field">
@@ -292,7 +292,7 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
         <tr><th>Seed</th><th>N</th><th>Auto-Closed</th><th>Precision</th><th>Recall</th><th>FMR</th><th>Auto-Rate</th><th>RPS</th></tr>
       </thead>
       <tbody id="seed-bench-tbody">
-        <tr><td colspan="7"><div class="empty-state" style="padding:20px;"><p>Click <strong>RUN BENCHMARK (4 SEEDS)</strong> to run multi-seed stability check.</p></div></td></tr>
+        <tr><td colspan="8"><div class="empty-state" style="padding:20px;"><p>Click <strong>RUN BENCHMARK (4 SEEDS)</strong> or switch to tab to view multi-seed stability check.</p></div></td></tr>
       </tbody>
     </table>
   </div>

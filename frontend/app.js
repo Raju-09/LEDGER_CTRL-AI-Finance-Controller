@@ -201,7 +201,8 @@ function renderSummary(detail) {
   const runIdStr = detail.run_id || (m.lineage && m.lineage.run_id) || '—';
   const split = (b.split || 'holdout').toUpperCase();
   setText('run-card-title', `${split}  ${runIdStr}`);
-  setText('run-card-sub', `${total} records · ${autoN} auto-closed · ${escN + unresN} refused`);
+    const baseN = ($('n') ? $('n').value : 200);
+  setText('run-card-sub', `${baseN} base → ${total} observed records · ${autoN} auto-closed · ${escN + unresN} refused`);
   const lin = m.lineage || {};
   setText('run-card-meta', `Seed ${b.seed} · Split ${split} · Matcher ${lin.matcher_version || '—'} · Policy ${lin.policy_version || '—'} · ${drps != null ? drps.toFixed(0) : '--'} rec/s · AI explains, policy decides`);
   const splitPill = $('env-split-pill');
@@ -249,7 +250,8 @@ function renderTable(records) {
   });
 
   const rc = $('row-count');
-  if (rc) rc.textContent = filtered.length + ' of ' + records.length + ' records';
+    const baseN = ($('n') ? $('n').value : 200);
+  if (rc) rc.textContent = `${filtered.length} of ${records.length} observed records (${baseN} base)`;
 
   const tbody = $('records-tbody');
   if (!tbody) return;
@@ -411,10 +413,48 @@ function openDrawer(r) {
   const proofTitle = isAutoClose
     ? `<div style="padding:10px 14px; background:var(--sage-bg); border:1px solid var(--sage-brd); color:var(--sage); font-family:var(--mono); font-size:12px; font-weight:600; margin-bottom:16px;">PROOF OF CLOSURE &mdash; POLICY-AUTHORIZED AUTO_CLOSE</div>`
     : `<div style="padding:10px 14px; background:var(--amber-bg); border:1px solid var(--amber-brd); color:var(--amber); font-family:var(--mono); font-size:12px; font-weight:600; margin-bottom:16px;">PROOF OF REFUSAL &mdash; ${esc((r.reason_code || 'BLOCKED'))}</div>`;
-  const runnerHTML = runner ? `<div class="drawer-section"><h4>Runner-up</h4><div style="font-family:var(--mono);font-size:12px;color:var(--paper-dim)">${esc(runner.record_id)} · score ${runner.score} · margin ${margin ?? '—'}</div></div>` : '';
+
+  let comparisonCardHTML = '';
+  if (!isAutoClose && invCands.length >= 2) {
+    const c1 = invCands[0];
+    const c2 = invCands[1];
+    const delta = Math.abs((c1.score || 0) - (c2.score || 0)).toFixed(3);
+    const deltaFailed = delta <= (ev.tie_delta || 0.05);
+    comparisonCardHTML = `
+      <div class="drawer-section" style="background:var(--slate-2); border:1px solid ${deltaFailed ? 'var(--amber-brd)' : 'var(--rule)'}; padding:14px; margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--rule); padding-bottom:6px;">
+          <h4 style="margin:0; font-family:var(--mono); font-size:11px; color:var(--amber);">DECISION PROOF: COMPETING CANDIDATE MARGIN</h4>
+          <span style="font-family:var(--mono); font-size:10px; padding:2px 6px; background:${deltaFailed ? 'var(--amber-bg)' : 'var(--sage-bg)'}; color:${deltaFailed ? 'var(--amber)' : 'var(--sage)'}; border:1px solid ${deltaFailed ? 'var(--amber-brd)' : 'var(--sage-brd)'}; font-weight:600;">
+            ${deltaFailed ? 'MARGIN FAILED (REFUSE)' : 'MARGIN CLEARED'}
+          </span>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-family:var(--mono); font-size:11px;">
+          <div style="background:var(--slate); border:1px solid var(--rule); padding:8px 10px;">
+            <div style="color:var(--paper-dim); font-size:10px;">CANDIDATE A (TOP)</div>
+            <div style="color:var(--paper); font-weight:600; font-size:13px; margin:2px 0;">${esc(c1.record_id)}</div>
+            <div style="color:var(--sage); font-weight:600;">Score: ${(c1.score || 0).toFixed(3)}</div>
+          </div>
+          <div style="background:var(--slate); border:1px solid var(--rule); padding:8px 10px;">
+            <div style="color:var(--paper-dim); font-size:10px;">CANDIDATE B (RUNNER-UP)</div>
+            <div style="color:var(--paper); font-weight:600; font-size:13px; margin:2px 0;">${esc(c2.record_id)}</div>
+            <div style="color:var(--amber); font-weight:600;">Score: ${(c2.score || 0).toFixed(3)}</div>
+          </div>
+        </div>
+        <div style="margin-top:10px; font-family:var(--mono); font-size:11px; display:flex; justify-content:space-between; align-items:center;">
+          <span>Observed Score Delta: <strong style="color:${deltaFailed ? 'var(--rust)' : 'var(--sage)'};">Δ ${delta}</strong></span>
+          <span style="color:var(--paper-dim); font-size:10px;">Required Policy Margin: &gt; ${ev.tie_delta || 0.05}</span>
+        </div>
+        <div style="margin-top:8px; font-family:var(--mono); font-size:10px; color:var(--paper-faint); border-top:1px dashed var(--rule); padding-top:6px;">
+          never_auto_close_on_tie() triggered &middot; Greedy argmax would have closed &middot; Policy forces ESCALATE
+        </div>
+      </div>
+    `;
+  }
+  const runnerHTML = runner && !comparisonCardHTML ? `<div class="drawer-section"><h4>Runner-up</h4><div style="font-family:var(--mono);font-size:12px;color:var(--paper-dim)">${esc(runner.record_id)} · score ${runner.score} · margin ${margin ?? '—'}</div></div>` : '';
 
   $('drawer-body').innerHTML = `
     ${proofTitle}
+    ${comparisonCardHTML}
     <div class="drawer-section">
       <h4>Source Records</h4>
       <div class="source-grid">${sourceHTML}</div>
@@ -530,11 +570,15 @@ function renderEvaluation() {
 
   const meta = $('ev-meta');
   if (meta && S.currentBatch) {
-    meta.textContent = `${runId} · ${split} · SEED ${S.currentBatch.seed} · N=${n} · this is the same run as Pipeline`;
+      const baseN = ($('n') ? $('n').value : 200);
+  meta.textContent = `${runId} · ${split} · SEED ${S.currentBatch.seed} · ${baseN} base → ${n} observed records · identical run to Pipeline`;
   }
 
   if ($('adv-bench-tbody') && $('adv-bench-tbody').textContent.includes('Click')) {
     runAdversarialLab();
+  }
+  if ($('seed-bench-tbody') && $('seed-bench-tbody').textContent.includes('Click')) {
+    runSeedBenchmark();
   }
 
   const drps = m.deterministic_rps;
