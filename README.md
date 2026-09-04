@@ -1,4 +1,4 @@
-# ◇ LEDGER/CTRL — Evidence-First Settlement Reconciliation Controller
+# ◇ LEDGER/CTRL - Evidence-First Settlement Reconciliation Controller
 
 <div align="center">
 
@@ -14,7 +14,7 @@
 
 ### *“Close what you can prove. Escalate what you can't.”*
 
-[Live Console Demo](http://127.0.0.1:8000/app) · [Interactive Architecture Flow](#system-architecture) · [5-Minute Video Pitch Script](#5-minute-video-pitch-director-script) · [Audit & Replay](#deterministic-decision-replay)
+[Live Console Demo](http://127.0.0.1:8000/app) · [Interactive Architecture Flow](#system-architecture) 
 
 </div>
 
