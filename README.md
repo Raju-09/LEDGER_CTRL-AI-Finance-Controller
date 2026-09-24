@@ -2,9 +2,11 @@
 
 <div align="center">
 
-**Razorpay AI Buildathon 2026 — Track 04: AI Finance Controller**
+**Razorpay AI Buildathon 2026 — Track 04: AI Finance Controller**  
+**Global Innovation Hackathon 2026 — FinTech + AI/ML + Generative AI**
 
 [![CI Status](https://img.shields.io/badge/Tests-26%2F26%20Passing-brightgreen?style=flat-square)](tests/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Render-46E3B7?style=flat-square&logo=render)](https://ledger-ctrl.onrender.com)
 [![Architecture](https://img.shields.io/badge/Architecture-Deterministic%20Waterfall%20%2B%20Policy%20Gate-blue?style=flat-square)](docs/architecture.md)
 [![Holdout Freeze](https://img.shields.io/badge/Holdout%20Freeze-Verified%20SHA--256-blueviolet?style=flat-square)](evaluation/freeze/RUN-42-H-92-2AEA.json)
 [![Precision](https://img.shields.io/badge/Holdout%20Precision-100.0%25%20(172%2F172)-success?style=flat-square)](#measured-accuracy--holdout-benchmarks)
@@ -14,7 +16,7 @@
 
 ### *“Close what you can prove. Escalate what you can't.”*
 
-[Live Console Demo](http://127.0.0.1:8000/app) · [Interactive Architecture Flow](#system-architecture) 
+[🚀 Live Cloud Demo](https://ledger-ctrl.onrender.com) · [Local Console](http://127.0.0.1:8000/app) · [Interactive Architecture Flow](#system-architecture) · [5-Minute Video Pitch Script](#5-minute-video-pitch-directors-script) · [Audit & Replay](#deterministic-decision-replay)
 
 </div>
 
@@ -203,6 +205,38 @@ The built-in Safety Lab executes 5 constructed edge-case fixtures verifying refu
 
 ---
 
+## 👥 Target Users & Universal Applicability
+
+* **Primary: Finance Operations Analysts** — Process daily settlement batches across payment gateways, banking channels, and ERP invoices without manual spreadsheet triage.
+* **Secondary: Finance Controllers & CFO Offices** — Require mathematically proven, auditable reconciliation with zero tolerance for false auto-matches prior to books close.
+* **Tertiary: FinTech Platforms & Payment Aggregators** — Scale merchant settlement reconciliation with deterministic precision and automated exception routing.
+* **Universal Context ("Innovate Without Borders"):** Settlement friction is jurisdiction-agnostic. Whether reconciling UPI in India, SEPA in Europe, ACH in North America, or M-Pesa in Africa, the evidence-first policy gate operates with zero geographic bias.
+
+---
+
+## 🗺️ Strategic Roadmap & Future Scope
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 1 (Current): Deterministic Decision Engine & Holdout Evaluation Harness    │
+│  ✔ 100% Precision Gate  ✔ Decision Proof Artifacts  ✔ Decoupled LLM Explainer    │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│ PHASE 2 (Connectors): Live Gateway & ERP Integration                             │
+│  ○ Webhook connectors (Razorpay, Stripe)  ○ ERP Sync (SAP, NetSuite)             │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│ PHASE 3 (Enterprise): Governance, Security & Multi-Tenancy                       │
+│  ○ RBAC & mTLS Authentication  ○ KMS Field Encryption  ○ PCI-DSS Audit Controls │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│ PHASE 4 (Expansion): Full-Suite Finance Operations Control Layer                 │
+│  ○ Receivables reconciliation  ○ Dispute queues  ○ Automated Month-End Close     │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│ PHASE 5 (Global): Cross-Border Multi-Currency Settlement Controller              │
+│  ○ Real-time FX tolerance windows  ○ SWIFT / ISO 20022 message parsers           │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## 🎬 5-Minute Video Pitch (Director's Script)
 
 Follow this battle-tested script to record your 5-minute submission video:
@@ -245,7 +279,7 @@ cd LEDGER_CTRL-AI-Finance-Controller
 # 2. Set up virtual environment
 python -m venv .venv
 # On Windows:
-.venv\Scriptsctivate
+.venv\Scripts\activate
 # On Linux/macOS:
 source .venv/bin/activate
 
@@ -329,8 +363,9 @@ LEDGER_CTRL-AI-Finance-Controller/
 
 <div align="center">
 
-**Built for the Razorpay AI Buildathon 2026**  
-*Track 04: AI Finance Controller*  
+**Built for the Razorpay AI Buildathon 2026 & Global Innovation Hackathon 2026**  
+*Track: AI Finance Controller · FinTech + AI/ML + Generative AI*  
 *Developed by Raju Sammeta*
 
 </div>
+
