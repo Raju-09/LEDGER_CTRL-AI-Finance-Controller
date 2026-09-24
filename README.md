@@ -2,8 +2,8 @@
 
 <div align="center">
 
-**Razorpay AI Buildathon 2026 — Track 04: AI Finance Controller**  
-**Global Innovation Hackathon 2026 — FinTech + AI/ML + Generative AI**
+**Global Innovation Hackathon 2026 — Build for a Better Future**  
+**Track: FinTech + AI/ML + Generative AI + Data Science (Organized by Bharat Academix)**
 
 [![CI Status](https://img.shields.io/badge/Tests-26%2F26%20Passing-brightgreen?style=flat-square)](tests/)
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Render-46E3B7?style=flat-square&logo=render)](https://ledger-ctrl.onrender.com)
@@ -193,8 +193,8 @@ The built-in Safety Lab executes 5 constructed edge-case fixtures verifying refu
 ## 🔒 Security Scope & Operational Bounds
 
 > [!IMPORTANT]
-> **Buildathon Demo Scope:**  
-> This implementation is purpose-built as a sandboxed financial control plane evaluating synthetic batches. It does not connect to live Razorpay banking rails, process merchant PII, or write to general ledgers.  
+> **Hackathon Prototype Scope:**  
+> This implementation is purpose-built as a sandboxed financial control plane evaluating synthetic batches. It does not connect to live payment gateway / banking rails, process merchant PII, or write to production general ledgers.  
 > 
 > **Production Deployment Requirements:**
 > A production rollout would mandate:
@@ -363,9 +363,9 @@ LEDGER_CTRL-AI-Finance-Controller/
 
 <div align="center">
 
-**Built for the Razorpay AI Buildathon 2026 & Global Innovation Hackathon 2026**  
-*Track: AI Finance Controller · FinTech + AI/ML + Generative AI*  
-*Developed by Raju Sammeta*
+**Global Innovation Hackathon 2026 — Build for a Better Future**  
+*Track: FinTech + AI/ML + Generative AI + Data Science*  
+*Organized by Bharat Academix · Developed by Raju Sammeta*
 
 </div>
 
