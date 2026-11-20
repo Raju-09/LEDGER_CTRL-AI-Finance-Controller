@@ -369,3 +369,10 @@ LEDGER_CTRL-AI-Finance-Controller/
 
 </div>
 
+
+
+## 🌐 Multi-Currency Reconciliation & Forensic Auditing
+
+- **Multi-Currency Engine (`matcher/fx_converter.py`)**: Real-time cross-currency ledger normalization.
+- **Benford's Law Forensic Scanner (`matcher/benford_audit.py`)**: Chi-Square statistical anomaly scoring on transaction distributions.
+- **Audit Ledger Exporter (`matcher/ledger_export.py`)**: Full reconciliation trace export in standardized CSV and JSON formats.
